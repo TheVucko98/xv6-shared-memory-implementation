@@ -4,6 +4,7 @@
 #include "types.h"
 #include "mmu.h"
 #include "param.h"
+#include "shm.h"
 
 // Per-CPU state
 struct cpu {
@@ -55,6 +56,11 @@ struct proc {
 	struct file *ofile[NOFILE];  // Open files
 	struct inode *cwd;           // Current directory
 	char name[16];               // Process name (debugging)
+	//za domaci
+	struct sharedObj* arrayOfObj[MAX_SHARED_PER_PROCm];
+	int numOfObj;
+	// exec ili fork, map
+	void* nextFreeVA;
 };
 
 // Process memory is laid out contiguously, low addresses first:
