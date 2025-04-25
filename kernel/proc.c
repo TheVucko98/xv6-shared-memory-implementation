@@ -88,7 +88,7 @@ allocproc(void)
 found:
 	p->state = EMBRYO;
 	p->pid = nextpid++;
-
+	p->numOfObj = 0;
 	release(&ptable.lock);
 
 	// Allocate kernel stack.
@@ -198,7 +198,17 @@ fork(void)
 	np->sz = curproc->sz;
 	np->parent = curproc;
 	*np->tf = *curproc->tf;
+	///////////////// Moj
+	for (int i = 0; i < MAX_SHARED_PER_PROCm; i++)
+	{
+		if(curproc->arrayOfObj[i]){
+			np->arrayOfObj[i] = curproc->arrayOfObj[i];
+		}
+	}
 
+	np->numOfObj = curproc->numOfObj;
+
+	/////////////
 	// Clear %eax so that fork returns 0 in the child.
 	np->tf->eax = 0;
 
@@ -240,7 +250,15 @@ exit(void)
 			curproc->ofile[fd] = 0;
 		}
 	}
-
+	///////////////// Moj
+	curproc->numOfObj = 0;
+				for (int i = 0; i < MAX_SHARED_PER_PROCm; i++)
+				{
+					if(curproc->arrayOfObj[i]){
+						curproc->arrayOfObj[i] = 0;
+					}
+				}
+	//
 	begin_op();
 	iput(curproc->cwd);
 	end_op();
@@ -294,6 +312,7 @@ wait(void)
 				p->name[0] = 0;
 				p->killed = 0;
 				p->state = UNUSED;
+				//
 				release(&ptable.lock);
 				return pid;
 			}

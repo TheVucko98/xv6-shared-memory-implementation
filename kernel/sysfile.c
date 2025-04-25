@@ -438,3 +438,13 @@ sys_pipe(void)
 	fd[1] = fd1;
 	return 0;
 }
+
+int 
+sys_shm_open(void){
+	char *name;
+	if(argstr(0, &name) < 0){
+		return -1;
+	}
+	
+	return shmOpen(name,myproc());
+}

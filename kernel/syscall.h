@@ -23,5 +23,6 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
+#define SYS_shm_open 22
 
 #endif // KERNEL_SYSCALL_H
