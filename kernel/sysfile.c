@@ -448,3 +448,14 @@ sys_shm_open(void){
 	
 	return shmOpen(name,myproc());
 }
+
+int 
+sys_shm_trunc(void){
+	int shm_od, size;
+	if(argint(0,&shm_od) < 0 || argint(1,&size) < 0){
+		return -1;
+	}
+
+	return shmTrunc(shm_od,size,myproc());
+	
+}

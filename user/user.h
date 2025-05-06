@@ -29,6 +29,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int shm_open(char*);
+int shm_trunc(int,int);
 
 // ulib.c
 int stat(const char*, struct stat*);

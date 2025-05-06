@@ -40,7 +40,7 @@ shmOpen(char *name, struct proc* pr){
         for(int i = 0; i < MAX_SHARED_PER_PROCm; i++){
             e9printf("pr-> %d   =  %p , name = %s \n", i, pr->arrayOfObj[i], pr->arrayOfObj[i]->name);
             if(pr->arrayOfObj[i] != 0  && strncmp(name,pr->arrayOfObj[i]->name,sizeof(pr->arrayOfObj[i]->name)) == 0){
-                e9printf("Ima vec proces %d\n",pr->arrayOfObj[i]->indexInArray);
+                e9printf("Proces ima vec objekat %d\n",pr->arrayOfObj[i]->indexInArray);
                 return pr->arrayOfObj[i]->indexInArray;
             }
         }
@@ -52,7 +52,7 @@ shmOpen(char *name, struct proc* pr){
     //dal je vec open
     for(int i = 0; i < MAX_OBJm; i++){
         struct sharedObj* pObj = &shmTable.objects[i];
-        if(pObj->isOpen == 1 && strncmp(name,pObj->name,sizeof(name)) == 0){
+        if(pObj->isOpen == 1 && strncmp(name,pObj->name,sizeof(pObj->name)) == 0){
             //kad se ne poklapaju indexi
             if(pObj->indexInArray != i){
                 e9printf("shm.c ->   sysShmOpen -> indexInArray != i !!!!\n");
@@ -93,4 +93,69 @@ shmOpen(char *name, struct proc* pr){
 
     return -1;
 
+}
+
+int
+shmTrunc(int shm_od, int size, struct proc* pr){
+    if(size <= 0 || shm_od < 0 || shm_od >= MAX_OBJm) {
+        return -1;
+    }
+
+    acquire(&shmTable.lock);
+    //dal postoji vec objekat koji pripada procesu
+    int exist = 0;
+    for(int i = 0; i < MAX_SHARED_PER_PROCm; i++) {
+        if(pr->arrayOfObj[i] && 
+           pr->arrayOfObj[i]->indexInArray == shm_od) {
+            exist = 1;
+            break;
+        }
+    }
+
+    if(!exist) {
+        release(&shmTable.lock);
+        return -1;
+    }
+
+    struct sharedObj* pObj = &shmTable.objects[shm_od];
+    
+    if(pObj->isOpen == 0 || pObj->isAllocated){
+        release(&shmTable.lock);
+        return -1;
+    }
+
+
+    int n = (size + PGSIZE - 1) / PGSIZE;;
+
+    if(n > MAX_PAGESm || n <= 0)
+    return -1;
+
+    pObj->nmbrPages = n;
+
+    int flagWentBad =0, indexDisaster = 0;
+    for(int i = 0; i < n; i++){
+        if(pObj->pages[i] = kalloc() == 0){
+            flagWentBad=1;
+            indexDisaster = i;
+            break;
+        }
+        memset(pObj->pages[i], 0, PGSIZE);
+    }
+
+    if(flagWentBad){
+        for(int i = 0; i < indexDisaster;i++ ){
+            kfree(pObj->pages[i]);
+            pObj->pages[i] = 0;
+        }
+        pObj->nmbrPages = 0;
+        release(&shmTable.lock);
+        return -1;
+    }
+
+
+    pObj->isAllocated = 1;
+
+
+    release(&shmTable.lock);
+    return n*PGSIZE;
 }
