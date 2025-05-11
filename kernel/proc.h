@@ -58,9 +58,11 @@ struct proc {
 	char name[16];               // Process name (debugging)
 	//za domaci
 	struct sharedObj* arrayOfObj[MAX_SHARED_PER_PROCm];
+	int mapObj[MAX_SHARED_PER_PROCm];
 	int numOfObj;
 	// exec ili fork, map
 	void* nextFreeVA;
+	
 };
 
 // Process memory is laid out contiguously, low addresses first:

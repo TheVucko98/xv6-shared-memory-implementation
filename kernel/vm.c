@@ -6,6 +6,7 @@
 #include "mmu.h"
 #include "proc.h"
 #include "file.h"
+#include "shm.h"
 
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
@@ -224,7 +225,8 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 	char *mem;
 	uint a;
 
-	if(newsz >= KERNBASE)
+	//ja manuelno mapiram obj nakon shm do KERNBASE
+	if(newsz >= SHMBASE)
 		return 0;
 	if(newsz < oldsz)
 		return oldsz;
@@ -271,7 +273,11 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 			if(pa == 0)
 				panic("kfree");
 			char *v = P2V(pa);
-			kfree(v);
+			//close ce kasnije ovo uraditi
+			if(a < SHMBASE){
+				kfree(v);
+			}
+			
 			*pte = 0;
 		}
 	}

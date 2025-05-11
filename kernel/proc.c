@@ -89,6 +89,10 @@ found:
 	p->state = EMBRYO;
 	p->pid = nextpid++;
 	p->numOfObj = 0;
+	p->nextFreeVA = SHMBASE;
+	for(int i =0; i < MAX_SHARED_PER_PROCm;i++){
+		p->mapObj[i] = -1;
+	}
 	release(&ptable.lock);
 
 	// Allocate kernel stack.

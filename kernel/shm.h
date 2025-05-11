@@ -28,6 +28,7 @@ struct sharedObj{
     int nmbrPages; // alociram ceo broj stranica
 	int isAllocated; // da li je alocirano
 	char* pages[MAX_PAGESm];
+    int flags;
     
     
 };

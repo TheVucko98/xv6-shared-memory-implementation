@@ -159,3 +159,144 @@ shmTrunc(int shm_od, int size, struct proc* pr){
     release(&shmTable.lock);
     return n*PGSIZE;
 }
+
+
+    // Return the address of the PTE in page table pgdir
+// that corresponds to virtual address va.  If alloc!=0,
+// create any required page table pages.
+static pte_t *
+walkpgdir(pde_t *pgdir, const void *va, int alloc)
+{
+	pde_t *pde;
+	pte_t *pgtab;
+
+	pde = &pgdir[PDX(va)];
+	if(*pde & PTE_P){
+		pgtab = (pte_t*)P2V(PTE_ADDR(*pde));
+	} else {
+		if(!alloc || (pgtab = (pte_t*)kalloc()) == 0)
+			return 0;
+		// Make sure all those PTE_P bits are zero.
+		memset(pgtab, 0, PGSIZE);
+		// The permissions here are overly generous, but they can
+		// be further restricted by the permissions in the page table
+		// entries, if necessary.
+		*pde = V2P(pgtab) | PTE_P | PTE_W | PTE_U;
+	}
+	return &pgtab[PTX(va)];
+}
+
+// Samo 1 stranica se zauzima, posto kalloc nije njih uzimao za redom
+static int
+mappage(pde_t *pgdir, void *va, uint pa, int perm)
+{
+    // Nalazimo entry i alociramo ako nije PT alocirana
+    pte_t *pte = walkpgdir(pgdir, va, 1); 
+
+    if (*pte & PTE_P) {
+        panic("remap"); 
+    }
+
+    *pte = pa | perm | PTE_P;  
+    return 0;
+}
+
+
+void* findNextVa(struct proc* p,int pageBr){
+    void* nextAddr = p->nextFreeVA + pageBr*PGSIZE;
+    // Jer zelim da tik do njega alocira i tek sledeci put ce javiti gresku
+    // Jer ce currAdr = KerBASE + bilo sta dace > KERNBASE
+    if(nextAddr > (void*)KERNBASE){
+        return 0;
+    }
+    void *currAddr = p->nextFreeVA;
+    p->nextFreeVA = nextAddr;
+
+
+    return currAddr;
+
+}
+
+int ShmMap(int sd, void **va, int flags, struct proc* pr) {
+    e9printf("Map () :  ");
+    
+    // Da li je Map vec zvan
+    for(int i = 0; i < MAX_SHARED_PER_PROCm; i++) {
+        if(pr->arrayOfObj[i] && 
+           pr->arrayOfObj[i]->indexInArray == sd && 
+           pr->mapObj[i] != -1) {
+            if(pr->nextFreeVA != 0) {
+                *va = pr->nextFreeVA; 
+                e9printf("  Objekat je vec mapiran !\n");
+                return 0;
+            }
+            break;
+        }
+    }
+
+    // Da li proces ima pristup ovom obj
+    int found = 0;
+    for(int i = 0; i < MAX_SHARED_PER_PROCm; i++) {
+        if(pr->arrayOfObj[i] && pr->arrayOfObj[i]->indexInArray == sd) {
+            found = 1;
+            break;
+        }
+    }
+    
+    if(!found) {
+        e9printf("Neuspesno mapiranje (): Nije zvat open za proces za objekat\n");
+        return -1;
+    }
+
+    acquire(&shmTable.lock);
+    struct sharedObj* pObj = &shmTable.objects[sd];
+    
+    // Da li je open i trunc 
+    if(pObj->isOpen == 0 || pObj->isAllocated == 0) {
+        e9printf("Neuspesno mapiranje (): Open ili Trunc nije uradjen za objekat !\n");
+        release(&shmTable.lock);
+        return -1;
+    }
+
+    // Nadji gde mapirati za usera
+    *va = findNextVa(pr, pObj->nmbrPages);
+    if(*va == 0) {
+        e9printf("Neuspesno mapiranje (): Nema vise memorije, dosli do KERNBASE !\n");
+        release(&shmTable.lock);
+        return -1;
+    }
+
+    // Map pages
+    for(int i = 0; i < pObj->nmbrPages; i++) {
+        void *userVa = *va + i * PGSIZE;
+        uint pa = V2P(pObj->pages[i]);
+        e9printf("\n %d. stranica: pa = %p, va = %p\n", i, pa, userVa);
+        if(mappage(pr->pgdir, userVa, pa, flags) < 0) {
+            // ciscenje mape ako nesto ode po zlu
+            for(int j = 0; j < i; j++) {
+                void *uv = *va + j * PGSIZE;
+                pte_t *pte = walkpgdir(pr->pgdir, uv, 0);
+                if(pte && (*pte & PTE_P)) {
+                    *pte = 0;
+                }
+            }
+            release(&shmTable.lock);
+            return -1;
+        }
+    }
+
+    // Update map info
+    for(int i = 0; i < MAX_SHARED_PER_PROCm; i++) {
+        if(pr->arrayOfObj[i] && pr->arrayOfObj[i]->indexInArray == sd) {
+            pr->mapObj[i] = 1;
+            pr->nextFreeVA = *va;
+            pObj->flags = flags;
+            break;
+        }
+    }
+
+    pObj->refCnt++;
+    release(&shmTable.lock);
+    return 0;
+}
+

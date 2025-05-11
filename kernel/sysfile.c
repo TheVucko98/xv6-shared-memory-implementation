@@ -459,3 +459,35 @@ sys_shm_trunc(void){
 	return shmTrunc(shm_od,size,myproc());
 	
 }
+
+int sys_shm_map(){
+    int sd, flags;
+    void** va;
+    if(argint(0, (int*)&sd) < 0 || argint(2, (int*)&flags) < 0){
+		return -1;
+	}
+    if(sd < 0 || sd > 63){
+        return -2;
+    }
+
+    if(argptr(1,(char**)&va, sizeof(void **)) < 0)
+		return -1;
+    //
+    void *tmpVa;
+    //
+    int perm = PTE_P | PTE_U;      
+    if (flags & O_RDWR)             
+        perm |= PTE_W;   
+    //
+    int ret =  ShmMap( sd, &tmpVa,  perm,myproc());
+    if(ret < 0){
+        
+        return ret;
+    }
+    if(copyout(myproc()->pgdir,(uint) va, &tmpVa, sizeof(void*)) < 0){
+        return -1;
+    }
+
+
+    return ret;
+}
