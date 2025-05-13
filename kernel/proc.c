@@ -185,7 +185,7 @@ growproc(int n)
 // Caller must set state of returned proc to RUNNABLE.
 int
 fork(void)
-{
+{	e9printf("\n fork() : \n");
 	int i, pid;
 	struct proc *np;
 	struct proc *curproc = myproc();
@@ -217,7 +217,7 @@ fork(void)
 	for(int i =0; i < MAX_SHARED_PER_PROCm; i++){
 		if(curproc->mapObj[i] != -1){
 			void *va;
-			shmMap(i,&va,curproc->arrayOfObj[i]->flags,np);
+			ShmMap(i,&va,curproc->arrayOfObj[i]->flags,np);
 		}
 	}
 
@@ -249,7 +249,8 @@ fork(void)
 // until its parent calls wait() to find out it exited.
 void
 exit(void)
-{
+{	
+	e9printf("\n exit() : \n");
 	struct proc *curproc = myproc();
 	struct proc *p;
 	int fd;

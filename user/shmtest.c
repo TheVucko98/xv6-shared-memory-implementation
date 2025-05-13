@@ -8,6 +8,7 @@ int test1(void)
 	printf("\nstarting test 1\n");
 	if(fork())
 	{
+
 		int fd = shm_open("/test1"); // so that it stays alive
 		wait();
 		int size = shm_trunc(fd, 400);
@@ -24,10 +25,11 @@ int test1(void)
 		shm_close(fd);
 		return 0;
 	}
-
+		
 	if(fork())
 	{
 		wait();
+
 		int fd = shm_open("/test1");
 		int size = shm_trunc(fd, 400);
 		int *p;
@@ -38,11 +40,18 @@ int test1(void)
 	else
 	{
 		int fd = shm_open("/test1");
+			
+
 		int size = shm_trunc(fd, 400);
+
 		int *p;
+		
 		shm_map(fd, (void **) &p, O_RDWR);
+				
+
 		p[1] = 42;
 		shm_close(fd);
+		
 	}
 	return 1;
 }
@@ -209,6 +218,7 @@ int test6(void)
 	void* foo;
 	for (unsigned tot_sz = 0; tot_sz < max_sz; tot_sz += step) {
 		int id;
+		
 		if ((id = shm_open("hello")) < 0) {
 			ok = 0;
 			break;
@@ -228,6 +238,7 @@ int test6(void)
 			break;
 		}
 		((char*)foo)[0] = 42;
+		//printf("va = %p, sz = %d \n", foo,tot_sz);
 		shm_close(id);
 	}
 
@@ -241,11 +252,11 @@ main(int argc, char *argv[])
 {
 	printf("note that errors could happen as a result of prior errors\n"
 	       "as a result, you should inspect errors in sequence\n");
-	if(test1()) goto ex;
-	if(test2()) goto ex;
-	if(test3()) goto ex;
-	if(test4()) goto ex;
-	if(test5()) goto ex;
+		if(test1()) goto ex;
+		if(test2()) goto ex;
+		if(test3()) goto ex;
+		if(test4()) goto ex;
+		if(test5()) goto ex;
 	if(test6()) goto ex;
 
 ex:

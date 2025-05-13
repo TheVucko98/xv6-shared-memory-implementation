@@ -200,6 +200,7 @@ UPROGS=\
 	$U/_wc\
 	$U/_zombie\
 	$U/_test\
+	$U/_shmtest\
 
 fs.img: $T/mkfs README $(UPROGS)
 	$T/mkfs fs.img README $(UPROGS)

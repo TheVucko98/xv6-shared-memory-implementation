@@ -6,7 +6,7 @@ struct sharedTable shmTable;
 void
 shminit(void){
     initlock(&shmTable.lock, "sharedTable");
-    e9printf("Pozvan shminit");
+    e9printf("Pozvan shminit\n");
 }
 
 void
@@ -27,7 +27,7 @@ addObjectToProc(struct proc* pr, int index){
 
 int
 shmOpen(char *name, struct proc* pr){
-    e9printf("shmOpen %d\n",pr->numOfObj);
+    e9printf("\n shmOpen %d\n",pr->numOfObj);
     if(pr->numOfObj > 16){
         return -1;
     }
@@ -97,6 +97,7 @@ shmOpen(char *name, struct proc* pr){
 
 int
 shmTrunc(int shm_od, int size, struct proc* pr){
+    e9printf("\n trunc () \n !");
     if(size <= 0 || shm_od < 0 || shm_od >= MAX_OBJm) {
         return -1;
     }
@@ -108,10 +109,11 @@ shmTrunc(int shm_od, int size, struct proc* pr){
         if(pr->arrayOfObj[i] && 
            pr->arrayOfObj[i]->indexInArray == shm_od) {
             exist = 1;
+                e9printf("Nadjen objekat , fd = %d !\n", i);
+
             break;
         }
     }
-
     if(!exist) {
         release(&shmTable.lock);
         return -1;
@@ -121,12 +123,13 @@ shmTrunc(int shm_od, int size, struct proc* pr){
     
     if(pObj->isOpen == 0 || pObj->isAllocated){
         release(&shmTable.lock);
+        e9printf("nije otvoren ili je alociran !\n");
         return -1;
     }
 
 
     int n = (size + PGSIZE - 1) / PGSIZE;;
-
+    e9printf("brojStranica = %d  ", n);
     if(n > MAX_PAGESm || n <= 0)
     return -1;
 
@@ -134,7 +137,7 @@ shmTrunc(int shm_od, int size, struct proc* pr){
 
     int flagWentBad =0, indexDisaster = 0;
     for(int i = 0; i < n; i++){
-        if(pObj->pages[i] = kalloc() == 0){
+        if((pObj->pages[i] = kalloc()) == 0){
             flagWentBad=1;
             indexDisaster = i;
             break;
@@ -225,7 +228,7 @@ int ShmMap(int sd, void **va, int flags, struct proc* pr) {
         if(pr->arrayOfObj[i] && 
            pr->arrayOfObj[i]->indexInArray == sd && 
            pr->mapObj[i] != -1) {
-            if(pr->nextFreeVA != 0) {
+            if(pr->vaObj[i] != 0) {
                 *va = pr->vaObj[i]; 
                 e9printf("  Objekat je vec mapiran !\n");
                 return 0;
@@ -324,7 +327,8 @@ void unMaping(struct proc* pr,int ind){
         
             unMapPage(pr->pgdir,pr->vaObj[ind]+i*PGSIZE);
     }
-    
+    pr->mapObj[ind] = -1;
+    pr->vaObj[ind] = 0;
 }
 void unOpening(struct proc* pr,int ind, struct sharedObj* pObj, int clear){
         pr->arrayOfObj[ind] = 0;
@@ -373,7 +377,7 @@ int shmClose(int fd, struct proc* pr){
         return -5;
     }
     else if(pObj->refCnt == 1){/// Ako je poslednji
-        e9printf("fd = %d, rfcnt = %d \n", fd,pObj->refCnt);
+        e9printf("fd = %d, rfcnt = %d, ind = %d, pr->mapObj[ind] = %d \n", fd,pObj->refCnt,ind,pr->mapObj[ind] );
 
         if(pr->mapObj[ind] != -1){
             unMaping(pr,ind);
