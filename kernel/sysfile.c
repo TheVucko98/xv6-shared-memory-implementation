@@ -460,7 +460,7 @@ sys_shm_trunc(void){
 	
 }
 
-int sys_shm_map(){
+int sys_shm_map(void){
     int sd, flags;
     void** va;
     if(argint(0, (int*)&sd) < 0 || argint(2, (int*)&flags) < 0){
@@ -490,4 +490,17 @@ int sys_shm_map(){
 
 
     return ret;
+}
+
+int sys_shm_close(void){
+	int fd;
+	if(argint(0,&fd) < 0){
+		return -1;
+	}
+
+	if(fd < 0 || fd > 63){
+		return -1;
+	}
+
+	return shmClose(fd,myproc());
 }

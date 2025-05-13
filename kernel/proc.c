@@ -88,11 +88,14 @@ allocproc(void)
 found:
 	p->state = EMBRYO;
 	p->pid = nextpid++;
-	p->numOfObj = 0;
-	p->nextFreeVA = SHMBASE;
+	//////////////// Moj
 	for(int i =0; i < MAX_SHARED_PER_PROCm;i++){
 		p->mapObj[i] = -1;
+		p->vaObj[i] = 0;
 	}
+	p->numOfObj = 0;
+	p->nextFreeVA = SHMBASE;
+	////////
 	release(&ptable.lock);
 
 	// Allocate kernel stack.
@@ -203,14 +206,21 @@ fork(void)
 	np->parent = curproc;
 	*np->tf = *curproc->tf;
 	///////////////// Moj
-	for (int i = 0; i < MAX_SHARED_PER_PROCm; i++)
-	{
+	// np
+	// curproc
+	
+	for(int i = 0; i < MAX_SHARED_PER_PROCm; i++){
 		if(curproc->arrayOfObj[i]){
-			np->arrayOfObj[i] = curproc->arrayOfObj[i];
+			shmOpen(curproc->arrayOfObj[i]->name,np);
+		}
+	}
+	for(int i =0; i < MAX_SHARED_PER_PROCm; i++){
+		if(curproc->mapObj[i] != -1){
+			void *va;
+			shmMap(i,&va,curproc->arrayOfObj[i]->flags,np);
 		}
 	}
 
-	np->numOfObj = curproc->numOfObj;
 
 	/////////////
 	// Clear %eax so that fork returns 0 in the child.
@@ -255,13 +265,14 @@ exit(void)
 		}
 	}
 	///////////////// Moj
-	curproc->numOfObj = 0;
-				for (int i = 0; i < MAX_SHARED_PER_PROCm; i++)
-				{
-					if(curproc->arrayOfObj[i]){
-						curproc->arrayOfObj[i] = 0;
-					}
-				}
+	
+	for (int i = 0; i < MAX_SHARED_PER_PROCm; i++)
+	{
+		if(curproc->arrayOfObj[i]){
+			// close 
+			shmClose(curproc->arrayOfObj[i]->indexInArray,curproc);			
+		}
+	}
 	//
 	begin_op();
 	iput(curproc->cwd);

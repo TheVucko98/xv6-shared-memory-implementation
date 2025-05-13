@@ -35,7 +35,7 @@ shmOpen(char *name, struct proc* pr){
         name[19] = 0;
     }
     e9printf("Open ()  | %s | : ", name );
-    //dal ima vec jedan objekat
+    //dal ima vec  objekat
     if(pr->numOfObj != 0){
         for(int i = 0; i < MAX_SHARED_PER_PROCm; i++){
             e9printf("pr-> %d   =  %p , name = %s \n", i, pr->arrayOfObj[i], pr->arrayOfObj[i]->name);
@@ -161,7 +161,7 @@ shmTrunc(int shm_od, int size, struct proc* pr){
 }
 
 
-    // Return the address of the PTE in page table pgdir
+// Return the address of the PTE in page table pgdir
 // that corresponds to virtual address va.  If alloc!=0,
 // create any required page table pages.
 static pte_t *
@@ -226,7 +226,7 @@ int ShmMap(int sd, void **va, int flags, struct proc* pr) {
            pr->arrayOfObj[i]->indexInArray == sd && 
            pr->mapObj[i] != -1) {
             if(pr->nextFreeVA != 0) {
-                *va = pr->nextFreeVA; 
+                *va = pr->vaObj[i]; 
                 e9printf("  Objekat je vec mapiran !\n");
                 return 0;
             }
@@ -234,7 +234,7 @@ int ShmMap(int sd, void **va, int flags, struct proc* pr) {
         }
     }
 
-    // Da li proces ima pristup ovom obj
+    // Da li proces ima pristup ovom objektu, tj jel zvao open
     int found = 0;
     for(int i = 0; i < MAX_SHARED_PER_PROCm; i++) {
         if(pr->arrayOfObj[i] && pr->arrayOfObj[i]->indexInArray == sd) {
@@ -251,7 +251,7 @@ int ShmMap(int sd, void **va, int flags, struct proc* pr) {
     acquire(&shmTable.lock);
     struct sharedObj* pObj = &shmTable.objects[sd];
     
-    // Da li je open i trunc 
+    // Da li je open i trunc zvan
     if(pObj->isOpen == 0 || pObj->isAllocated == 0) {
         e9printf("Neuspesno mapiranje (): Open ili Trunc nije uradjen za objekat !\n");
         release(&shmTable.lock);
@@ -289,14 +289,111 @@ int ShmMap(int sd, void **va, int flags, struct proc* pr) {
     for(int i = 0; i < MAX_SHARED_PER_PROCm; i++) {
         if(pr->arrayOfObj[i] && pr->arrayOfObj[i]->indexInArray == sd) {
             pr->mapObj[i] = 1;
-            pr->nextFreeVA = *va;
+            pr->vaObj[i] = *va;
             pObj->flags = flags;
             break;
         }
     }
 
-    pObj->refCnt++;
+
     release(&shmTable.lock);
     return 0;
 }
 
+
+
+
+static int unMapPage(pde_t *pgdir, void *va){
+    // Nadji entry
+    pte_t *pte = walkpgdir(pgdir, va, 0); 
+
+    if (pte == 0 || !(*pte & PTE_P)) {
+        return -1;  // Stranica nije mapirana
+    }
+
+    *pte = 0;
+    
+    return 0;
+}
+
+
+void unMaping(struct proc* pr,int ind){
+    /// Odmapiranje bez free u kernelu
+    int nmbrPages = shmTable.objects[pr->arrayOfObj[ind]->indexInArray].nmbrPages;
+    for (int i = 0; i < nmbrPages; i++){   
+        
+            unMapPage(pr->pgdir,pr->vaObj[ind]+i*PGSIZE);
+    }
+    
+}
+void unOpening(struct proc* pr,int ind, struct sharedObj* pObj, int clear){
+        pr->arrayOfObj[ind] = 0;
+        pr->numOfObj--;
+        pObj->refCnt--;
+        if(clear){
+            memset(pObj,0,sizeof(struct sharedObj));
+        }
+}
+// Dodati provere ako trebaju za Dalije MAP ili TRUNC
+int shmClose(int fd, struct proc* pr){
+    e9printf("Close()  : ",fd);
+    //
+    int ind = -1;
+    
+    // Provera da li proces  ima ovaj obj
+    for (int i = 0; i < MAX_SHARED_PER_PROCm; i++)
+      {
+          if(pr->arrayOfObj[i] && pr->arrayOfObj[i]->indexInArray == fd ){
+              ind = i;
+              break;
+          }
+      }
+    if(ind == -1){
+        e9printf("Close() proces nema ovaj objekat  fd = %d \n",fd);
+        return -7;
+    }
+    
+
+    acquire(&shmTable.lock);
+    struct sharedObj* pObj = &shmTable.objects[fd];
+    
+
+    
+    if(pObj->refCnt > 1){
+        e9printf("fd = %d, rfcnt = %d \n", pObj->indexInArray,pObj->refCnt);
+        
+        if(pr->mapObj[ind] != -1){
+        unMaping(pr,ind);
+        }
+
+        unOpening(pr,ind,pObj,0);
+    }else if(pObj->refCnt <= 0){// Ne treba da se desi
+        release(&shmTable.lock);
+        e9printf("Close() :  \n  RfcNt < 0 !!!!    fd = %d \n",fd);
+        return -5;
+    }
+    else if(pObj->refCnt == 1){/// Ako je poslednji
+        e9printf("fd = %d, rfcnt = %d \n", fd,pObj->refCnt);
+
+        if(pr->mapObj[ind] != -1){
+            unMaping(pr,ind);
+        }
+
+        // Free pages
+        if(pObj->isAllocated){
+            for (int i = 0; i < pObj->nmbrPages; i++){   
+                kfree(pObj->pages[i]);
+            }
+        }
+        
+        
+        unOpening(pr,ind,pObj,1);
+        // umanji broj zauzetih obj
+        shmTable.nmbrSlotsTaken--;
+        
+    }
+ 
+    release(&shmTable.lock);
+
+    return 0;
+}

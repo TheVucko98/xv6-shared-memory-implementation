@@ -25,5 +25,7 @@
 #define SYS_close  21
 #define SYS_shm_open 22
 #define SYS_shm_trunc 23
+#define SYS_shm_map 24
+#define SYS_shm_close 25
 
 #endif // KERNEL_SYSCALL_H

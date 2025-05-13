@@ -99,7 +99,16 @@ exec(char *path, char **argv)
 	curproc->tf->eip = elf.entry;  // main
 	curproc->tf->esp = sp;
 	///////////////// Moj
-	curproc->numOfObj = 0;
+				// close ovde
+	
+	for (int i = 0; i < MAX_SHARED_PER_PROCm; i++)
+	{
+		if(curproc->arrayOfObj[i]){
+			// close 
+			shmClose(curproc->arrayOfObj[i]->indexInArray,curproc);			
+		}
+	}
+	
 	////////////////
 	switchuvm(curproc);
 	freevm(oldpgdir);
