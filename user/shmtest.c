@@ -248,7 +248,7 @@ int test6(void)
 
 int test7(void)
 {
-	printf("\nstarting test 1\n");
+	printf("\nstarting test 7\n");
 	if(fork())
 	{
 
@@ -272,7 +272,7 @@ int test7(void)
 	if(fork())
 	{
 		wait();
-		printf("2\n");
+	
 		int fd = shm_open("/test1");
 		int size = shm_trunc(fd, 122000);
 		int *p;

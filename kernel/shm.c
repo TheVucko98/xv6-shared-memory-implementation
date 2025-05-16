@@ -239,7 +239,8 @@ void* findNextVa(struct proc* p,int pageBr){
 
 int ShmMap(int sd, void **va, int flags, struct proc* pr) {
     e9printf("Map () :  ");
-    
+    acquire(&shmTable.lock);
+
     // Da li je Map vec zvan
     for(int i = 0; i < MAX_SHARED_PER_PROCm; i++) {
         if(pr->arrayOfObj[i] && 
@@ -248,6 +249,7 @@ int ShmMap(int sd, void **va, int flags, struct proc* pr) {
             if(pr->vaObj[i] != 0) {
                 *va = pr->vaObj[i]; 
                 e9printf("  Objekat je vec mapiran !\n");
+                release(&shmTable.lock);
                 return 0;
             }
             break;
@@ -265,10 +267,10 @@ int ShmMap(int sd, void **va, int flags, struct proc* pr) {
     
     if(!found) {
         e9printf("Neuspesno mapiranje (): Nije zvat open za proces za objekat\n");
+        release(&shmTable.lock);
         return -1;
     }
 
-    acquire(&shmTable.lock);
     struct sharedObj* pObj = &shmTable.objects[sd];
     
     // Da li je open i trunc zvan
@@ -360,7 +362,7 @@ int shmClose(int fd, struct proc* pr){
     e9printf("Close()  : ",fd);
     //
     int ind = -1;
-    
+    acquire(&shmTable.lock);
     // Provera da li proces  ima ovaj obj
     for (int i = 0; i < MAX_SHARED_PER_PROCm; i++)
       {
@@ -371,11 +373,12 @@ int shmClose(int fd, struct proc* pr){
       }
     if(ind == -1){
         e9printf("Close() proces nema ovaj objekat  fd = %d \n",fd);
+        release(&shmTable.lock);
         return -7;
     }
     
     
-    acquire(&shmTable.lock);
+    
     struct sharedObj* pObj = &shmTable.objects[fd];
     
     e9printf("Brisem objekat : %s \n", pObj->name);

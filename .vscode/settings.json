@@ -59,6 +59,7 @@
   "files.associations": {
     "*html": "html",
     "user.h": "c",
-    "x86.h": "c"
+    "x86.h": "c",
+    "shm.h": "c"
   }
 }
