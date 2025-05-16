@@ -90,8 +90,10 @@ found:
 	p->pid = nextpid++;
 	//////////////// Moj
 	for(int i =0; i < MAX_SHARED_PER_PROCm;i++){
+		p->arrayOfObj[i] = 0;
 		p->mapObj[i] = -1;
 		p->vaObj[i] = 0;
+		p->flagsObj[i] = 0;
 	}
 	p->numOfObj = 0;
 	p->nextFreeVA = SHMBASE;
