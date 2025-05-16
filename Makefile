@@ -201,7 +201,12 @@ UPROGS=\
 	$U/_zombie\
 	$U/_test\
 	$U/_shmtest\
+	$U/_test2\
+	$U/_test1\
+	$U/_testExec\
+	$U/_shmtestexec\
 
+	
 fs.img: $T/mkfs README $(UPROGS)
 	$T/mkfs fs.img README $(UPROGS)
 

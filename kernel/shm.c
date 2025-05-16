@@ -130,9 +130,11 @@ shmTrunc(int shm_od, int size, struct proc* pr){
 
     int n = (size + PGSIZE - 1) / PGSIZE;;
     e9printf("brojStranica = %d  ", n);
-    if(n > MAX_PAGESm || n <= 0)
-    return -1;
-
+    if(n > MAX_PAGESm || n <= 0){
+          release(&shmTable.lock);
+        e9printf("Stranice premasuju %dB\n",MAX_PAGESm*PGSIZE);
+        return -1;
+    }
     pObj->nmbrPages = n;
 
     int flagWentBad =0, indexDisaster = 0;
@@ -357,11 +359,11 @@ int shmClose(int fd, struct proc* pr){
         return -7;
     }
     
-
+    
     acquire(&shmTable.lock);
     struct sharedObj* pObj = &shmTable.objects[fd];
     
-
+    e9printf("Brisem objekat : %s \n", pObj->name);
     
     if(pObj->refCnt > 1){
         e9printf("fd = %d, rfcnt = %d \n", pObj->indexInArray,pObj->refCnt);

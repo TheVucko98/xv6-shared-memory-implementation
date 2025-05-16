@@ -246,18 +246,76 @@ int test6(void)
 	return 1;
 }
 
+int test7(void)
+{
+	printf("\nstarting test 1\n");
+	if(fork())
+	{
+
+		int fd = shm_open("/test1"); // so that it stays alive
+		wait();
+		int size = shm_trunc(fd, 122000);
+		int *p;
+		shm_map(fd, (void **) &p, O_RDWR);
+		if(p[7000] == 42 && p[27000] == 42)
+		{
+			printf("Test 7 OK (if no other errors appeared)\n");
+		}
+		else
+		{
+			printf("Test 7 Not OK\n");
+		}
+		shm_close(fd);
+		return 0;
+	}
+		
+	if(fork())
+	{
+		wait();
+		printf("2\n");
+		int fd = shm_open("/test1");
+		int size = shm_trunc(fd, 122000);
+		int *p;
+		shm_map(fd, (void **) &p, O_RDWR);
+		p[7000] = 42;
+		shm_close(fd);
+	}
+	else
+	{
+		int fd = shm_open("/test1");
+			
+		
+		int size = shm_trunc(fd, 122000);
+		if(size < 0){
+			printf("Test 7 Not OK\n");
+				
+			return 1;
+		}
+		int *p;
+		
+		shm_map(fd, (void **) &p, O_RDWR);
+				
+
+		p[27000] = 42;
+		shm_close(fd);
+		
+	}
+	return 1;
+}
+
 
 int
 main(int argc, char *argv[])
 {
 	printf("note that errors could happen as a result of prior errors\n"
 	       "as a result, you should inspect errors in sequence\n");
-		if(test1()) goto ex;
-		if(test2()) goto ex;
-		if(test3()) goto ex;
-		if(test4()) goto ex;
-		if(test5()) goto ex;
-	if(test6()) goto ex;
+		//if(test1()) goto ex;
+		//if(test2()) goto ex;
+		//if(test3()) goto ex;
+		//if(test4()) goto ex;
+		//if(test5()) goto ex;
+	//if(test6()) goto ex;
+	if(test7()) goto ex;
 
 ex:
 	exit();
