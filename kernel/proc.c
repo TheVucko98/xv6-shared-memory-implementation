@@ -217,7 +217,7 @@ fork(void)
 	for(int i =0; i < MAX_SHARED_PER_PROCm; i++){
 		if(curproc->mapObj[i] != -1){
 			void *va;
-			ShmMap(i,&va,curproc->arrayOfObj[i]->flags,np);
+			ShmMap(i,&va,curproc->flagsObj[i],np);
 		}
 	}
 

@@ -312,7 +312,7 @@ int ShmMap(int sd, void **va, int flags, struct proc* pr) {
         if(pr->arrayOfObj[i] && pr->arrayOfObj[i]->indexInArray == sd) {
             pr->mapObj[i] = 1;
             pr->vaObj[i] = *va;
-            pObj->flags = flags;
+            pr->flagsObj[i] = flags;
             break;
         }
     }

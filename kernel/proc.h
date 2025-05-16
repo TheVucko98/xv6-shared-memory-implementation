@@ -60,6 +60,7 @@ struct proc {
 	struct sharedObj* arrayOfObj[MAX_SHARED_PER_PROCm];
 	int mapObj[MAX_SHARED_PER_PROCm];
 	void * vaObj[MAX_SHARED_PER_PROCm];
+	int flagsObj[MAX_SHARED_PER_PROCm];
 	int numOfObj;
 	// exec ili fork, map
 	void* nextFreeVA;
