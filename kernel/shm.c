@@ -28,7 +28,10 @@ addObjectToProc(struct proc* pr, int index){
 int
 shmOpen(char *name, struct proc* pr){
     e9printf("\n shmOpen %d\n",pr->numOfObj);
+    acquire(&shmTable.lock);
+
     if(pr->numOfObj > 16){
+        release(&shmTable.lock);
         return -1;
     }
     if(strlen(name) > 19){
@@ -36,21 +39,29 @@ shmOpen(char *name, struct proc* pr){
     }
     e9printf("Open ()  | %s | : ", name );
     //dal ima vec  objekat
+
     if(pr->numOfObj != 0){
+        
         for(int i = 0; i < MAX_SHARED_PER_PROCm; i++){
+
             e9printf("pr-> %d   =  %p , name = %s \n", i, pr->arrayOfObj[i], pr->arrayOfObj[i]->name);
             if(pr->arrayOfObj[i] != 0  && strncmp(name,pr->arrayOfObj[i]->name,sizeof(pr->arrayOfObj[i]->name)) == 0){
                 e9printf("Proces ima vec objekat %d\n",pr->arrayOfObj[i]->indexInArray);
-                return pr->arrayOfObj[i]->indexInArray;
+                int id = pr->arrayOfObj[i]->indexInArray;
+                release(&shmTable.lock);
+                return id;
             }
+    
         }
     }
     if(pr->numOfObj >= 16){
+        release(&shmTable.lock);
         return -1;
     }
-    acquire(&shmTable.lock);
+
     //dal je vec open
     for(int i = 0; i < MAX_OBJm; i++){
+ 
         struct sharedObj* pObj = &shmTable.objects[i];
         if(pObj->isOpen == 1 && strncmp(name,pObj->name,sizeof(pObj->name)) == 0){
             //kad se ne poklapaju indexi
@@ -66,14 +77,18 @@ shmOpen(char *name, struct proc* pr){
             release(&shmTable.lock);
             return i;
         }
+        
     }
+
     if(shmTable.nmbrSlotsTaken >= 64){
         e9printf("Nema dovoljno mesta za zauzimanje\n");
         release(&shmTable.lock);
         return -1;
     }
+    
 
     for(int i =0; i < MAX_OBJm; i++){
+        
         struct sharedObj* pObj = &shmTable.objects[i];
         if(pObj->isOpen == 0){
       
@@ -90,7 +105,7 @@ shmOpen(char *name, struct proc* pr){
             return i;
         }
     }
-
+    release(&shmTable.lock);
     return -1;
 
 }
