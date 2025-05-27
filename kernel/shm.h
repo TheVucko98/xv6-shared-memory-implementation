@@ -36,7 +36,16 @@ struct sharedTable{
     int nmbrSlotsTaken;
 };
 
+void
+shminit(void);
+int
+shmOpen(char *name, struct proc* pr);
 
+int
+shmTrunc(int shm_od, int size, struct proc* pr);
 
+int ShmMap(int sd, void **va, int flags, struct proc* pr);
+
+int shmClose(int fd, struct proc* pr);
 
 #endif

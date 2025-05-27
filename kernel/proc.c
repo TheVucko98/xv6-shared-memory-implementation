@@ -5,6 +5,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "shm.h"
 
 struct {
 	struct spinlock lock;
@@ -96,7 +97,7 @@ found:
 		p->flagsObj[i] = 0;
 	}
 	p->numOfObj = 0;
-	p->nextFreeVA = SHMBASE;
+	p->nextFreeVA = (void*) SHMBASE;
 	////////
 	release(&ptable.lock);
 

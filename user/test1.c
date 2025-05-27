@@ -34,7 +34,9 @@ int main(int argc, char *argv[]) {
     sz = shm_trunc(od,20000);
     printf("sz = %d\n",sz);
     char* va;
-    shm_map(od,&va,O_RDWR);
+
+    int val = shm_map(od,(void **)&va,O_RDWR);
+
     char arr[] = "aca baca faca caca!\n";
     int br = sizeof(arr)/sizeof(arr[0])-1;
     int i;
