@@ -1314,7 +1314,7 @@ dirfile(void)
 		printf("unlink dirfile/xx succeeded!\n");
 		exit();
 	}
-	if(link("README", "dirfile/xx") == 0){
+	if(link("README.md", "dirfile/xx") == 0){
 		printf("link to dirfile/xx succeeded!\n");
 		exit();
 	}
@@ -1358,7 +1358,7 @@ iref(void)
 		}
 
 		mkdir("");
-		link("README", "");
+		link("README.md", "");
 		fd = open("", O_CREATE);
 		if(fd >= 0)
 			close(fd);

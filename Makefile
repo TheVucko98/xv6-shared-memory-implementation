@@ -207,7 +207,7 @@ UPROGS=\
 	$U/_shmtestexec\
 
 	
-fs.img: $T/mkfs README $(UPROGS)
+fs.img: $T/mkfs README.md $(UPROGS)
 	$T/mkfs fs.img README $(UPROGS)
 
 .PHONY: clean
