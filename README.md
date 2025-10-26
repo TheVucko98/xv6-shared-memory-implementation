@@ -24,4 +24,4 @@ The new functionality is integrated carefully to ensure it does not interfere wi
    git clone <repo-link>
    cd <repo-name>
    cd projectName
-   make qemu
+   make qemu-nox
