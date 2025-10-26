@@ -1,4 +1,4 @@
-# OS2025 - Home Assignment 1: Theme Color Customization in xv6
+# OS2025     Theme Color Customization in xv6
 
 ## Overview
 This project modifies the xv6 operating system to support dynamic theme changes, allowing users to customize the foreground and background colors of the entire screen via an interactive table menu.
